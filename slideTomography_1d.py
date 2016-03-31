@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 23 20:58:27 2016
+
+@author: Dion
+"""
+
 from pylab import *
 
 
@@ -60,13 +67,13 @@ class Tomography_1D(object):
 #            A = zeros([signal.shape[0]-N,N])
             A=zeros([S-N,N])
 #            b = signal[:-N] - pattern[N/2:-N/2-N]
-            b=pattern[:S-N]
+            b=pattern[0:S-N]
             
             padSig=np.zeros(lb+S+lf)        
             padSig[lb:lb+S]=signal[:]
 
-            for i in range(0,S-N):
-                A[i,:] = padSig[i:i+N]
+            for i in range(lb,S-N):
+                A[i,:] = padSig[i-lb:i+lf]
 
             self.Amatrix=A
             self.b=b
@@ -89,10 +96,12 @@ class Tomography_1D(object):
         lb=int(N)/2        
         lf=int(N)/2
         
-        padSig=np.zeros(lb+S+lf+200)        
+        padSig=np.zeros(lb+S+lf)        
         padSig[lb:lb+S]=signal[:]
 
         
-        for i in range(lb,S+100):
+        for i in range(lb,S):
             rec[i] = sum(padSig[i-lb:i+lf]*self.CA)
         return rec
+
+     
