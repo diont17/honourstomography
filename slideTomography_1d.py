@@ -20,14 +20,20 @@ class Tomography_1D(object):
         Arguments:
         - `smp`:
         """
-
+        
         M = smp.shape[0]
         N = self._sweetSpot.shape[0]
 
+        lb=int(N/2)
+        lf=+int(N/2)
+        
+        padSmp=np.zeros(M+N+N)        
+        padSmp[N:N+M]=smp
+        
         if M>N:
             signal = []
-            for i in range(M-N):
-                signal.append(sum(self._sweetSpot*smp[i:i+N]))
+            for i in range(lb,M+lb+lf):
+                signal.append(sum(self._sweetSpot*padSmp[i-lb:i+lf]))
 
             return array(signal)
 
@@ -35,31 +41,36 @@ class Tomography_1D(object):
             print "Sample too small - sweet spot size: %d"%N
             return None
             
-        
-    def calibrate(self, pattern):
+            
+    def calibrate(self, pattern, signal):
         """
         
         Arguments:
         - `pattern`:
         """
-        
-        signal = self.calcSignal(pattern)
-
+        lb=self._sweetSpot.shape[0]/2
+        lf=self._sweetSpot.shape[0]/2
+                
         if isinstance(signal,ndarray):
         
             # Solve Ax = b
 
             N = self._sweetSpot.shape[0]
+            S=signal.shape[0]
+#            A = zeros([signal.shape[0]-N,N])
+            A=zeros([S-N,N])
+#            b = signal[:-N] - pattern[N/2:-N/2-N]
+            b=pattern[:S-N]
+            
+            padSig=np.zeros(lb+S+lf)        
+            padSig[lb:lb+S]=signal[:]
 
+            for i in range(0,S-N):
+                A[i,:] = padSig[i:i+N]
 
-            A = zeros([signal.shape[0]-N,N])
-            b = signal[:-N] - pattern[N/2:-N/2-N]
-
-            for i in range(signal.shape[0]-N):
-                A[i,:] = signal[i:i+N]
-
-
-            self._coeffArray,resid,rank,s = lstsq(A,b)
+            self.Amatrix=A
+            self.b=b
+            self.CA,self.coeff_resid,self.coeff_rank,self.coeff_s = lstsq(A,b)
 
         
         
@@ -72,10 +83,16 @@ class Tomography_1D(object):
         """
 
         N = self._sweetSpot.shape[0]
-        rec = zeros([signal.shape[0]-N])
+        S = signal.shape[0]
+        rec = zeros(S+100)
         
-        for i in range(signal.shape[0]-N):
-            rec[i] = signal[i]-sum(signal[i:i+N]*self._coeffArray)
-    
+        lb=int(N)/2        
+        lf=int(N)/2
+        
+        padSig=np.zeros(lb+S+lf+200)        
+        padSig[lb:lb+S]=signal[:]
 
+        
+        for i in range(lb,S+100):
+            rec[i] = sum(padSig[i-lb:i+lf]*self.CA)
         return rec
