@@ -39,7 +39,7 @@ class Tomography_1D(object):
         
         if M>N:
             signal = []
-            for i in range(lb,M+lb+lf):
+            for i in xrange(lb,M+N+lb):
                 signal.append(sum(self._sweetSpot*padSmp[i-lb:i+lf]))
 
             return array(signal)
@@ -64,16 +64,19 @@ class Tomography_1D(object):
 
             N = self._sweetSpot.shape[0]
             S=signal.shape[0]
+            B=pattern.shape[0]
 #            A = zeros([signal.shape[0]-N,N])
-            A=zeros([S-N,N])
+#            A=zeros([S-N,N])
+            A=zeros([B,N])
 #            b = signal[:-N] - pattern[N/2:-N/2-N]
-            b=pattern[0:S-N]
+            b=pattern
             
-            padSig=np.zeros(lb+S+lf)        
-            padSig[lb:lb+S]=signal[:]
+            padSig=np.zeros(S+N+N)        
+            padSig[N:N+S]=signal[:]
 
-            for i in range(lb,S-N):
-                A[i,:] = padSig[i-lb:i+lf]
+            for i in xrange(B):
+                A[i,:] = padSig[i:i+N]
+
 
             self.Amatrix=A
             self.b=b
@@ -81,7 +84,6 @@ class Tomography_1D(object):
 
         
         
-
     def reconstruct(self, signal):
         """
         
@@ -91,17 +93,14 @@ class Tomography_1D(object):
 
         N = self._sweetSpot.shape[0]
         S = signal.shape[0]
-        rec = zeros(S+100)
+        rec = zeros(S)
         
         lb=int(N)/2        
         lf=int(N)/2
         
         padSig=np.zeros(lb+S+lf)        
         padSig[lb:lb+S]=signal[:]
-
         
-        for i in range(lb,S):
-            rec[i] = sum(padSig[i-lb:i+lf]*self.CA)
+        for i in xrange(lb,S):
+            rec[i-lb] = sum(padSig[i-lb:i-lb+N]*self.CA)
         return rec
-
-     
