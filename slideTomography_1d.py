@@ -63,24 +63,26 @@ class Tomography_1D(object):
             # Solve Ax = b
 
             N = self._sweetSpot.shape[0]
+            lb=int(N/2)
             S=signal.shape[0]
             B=pattern.shape[0]
 #            A = zeros([signal.shape[0]-N,N])
 #            A=zeros([S-N,N])
-            A=zeros([B,N])
+            A=zeros([B-N,N])
 #            b = signal[:-N] - pattern[N/2:-N/2-N]
-            b=pattern
+            b=pattern[lb:B-lb]
+            self.Amatrix=A
+            self.b=b           
             
             padSig=np.zeros(S+N+N)        
             padSig[N:N+S]=signal[:]
+            
+            for i in xrange(lb,B-N+lb,1):
+                A[i-lb,:] = padSig[i+N:i+N+N]
 
-            for i in xrange(B):
-                A[i,:] = padSig[i:i+N]
-
-
-            self.Amatrix=A
-            self.b=b
-            self.CA,self.coeff_resid,self.coeff_rank,self.coeff_s = lstsq(A,b)
+            A2=A[100:100+N,0:N]
+            b2=b[100:100+N]
+            self.CA,self.coeff_resid,self.coeff_rank,self.coeff_s = lstsq(A2,b2)
 
         
         
@@ -93,14 +95,14 @@ class Tomography_1D(object):
 
         N = self._sweetSpot.shape[0]
         S = signal.shape[0]
-        rec = zeros(S)
+        rec = zeros(S+N)
         
         lb=int(N)/2        
-        lf=int(N)/2
+        lf=int(N)/4
         
-        padSig=np.zeros(lb+S+lf)        
-        padSig[lb:lb+S]=signal[:]
+        padSig=np.zeros(N+S+N)        
+        padSig[0:S]=signal[:]
         
-        for i in xrange(lb,S):
-            rec[i-lb] = sum(padSig[i-lb:i-lb+N]*self.CA)
+        for i in xrange(0,S):
+            rec[i] = sum(padSig[i:i+N]*self.CA)
         return rec

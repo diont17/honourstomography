@@ -23,49 +23,87 @@ from scipy.signal.windows import gaussian as gaussian_window
 import slideTomography_1d as tm
 #reload(tm)
 
-swSptSize=80
-swSptPadding=10
+swSptSize=70
+swSptPadding=15
 
 sweetSpot= np.zeros(swSptSize + 2*swSptPadding)
 sweetSpot[swSptPadding:-swSptPadding]=1
 sweetSpot=gaussian_filter(sweetSpot,5)
+#sweetSpot=gaussian_window(100,40)
+
 
 t1d= tm.Tomography_1D(sweetSpot)
+t1d2=tm.Tomography_1D(sweetSpot)
 
-calSize=400
-calSmp=2*np.ones(calSize)
+calSize=500
+calSmp=20*np.ones(calSize)
 calSmp[40:50]=0
 calSmp[60:70]=0
 calSmp[80:100]=0
 calSmp[120:150]=0
 calSmp[180:220]=0
 calSmp[260:300]=0
-
+calSmp[450:500]=0
 
 sg=3
 calSmp=gaussian_filter(calSmp,sg)
 
 np.random.seed(2)
-storednoise=5-10*np.random.rand(600)
-#storednoise=np.zeros(600)
+noisesize=30
+storednoise=noisesize-noisesize*2*np.random.rand(600)
 
 calSig=t1d.calcSignal(calSmp)
 calSig+=storednoise[:len(calSig)]
-t1d.calibrate(calSmp,calSig)
+t1d.calibrate(np.append(np.zeros(50),calSmp),calSig)
+
+calSize=400
+calSmp2=np.zeros(calSize)
+calSmp2[50:350]=20
+calSmp2=gaussian_filter(calSmp2,sg)
+
+storednoise=noisesize-noisesize*2*np.random.rand(600)
+calSig2=t1d2.calcSignal(calSmp2)
+calSig2+=storednoise[:len(calSig2)]
+t1d2.calibrate(np.append(np.zeros(50),calSmp2),calSig2)
 
 
 smpSize=500
 smpPadding=2
 
 # Sine function
-storednoise=1-2*np.random.rand(smpSize)
 smp  = np.zeros([smpSize])
-smp[smpPadding:-smpPadding] =  np.sin(np.linspace(0,5*np.pi,smpSize-2*smpPadding))
+smp[smpPadding:-smpPadding] =  np.sin(np.linspace(0,10*np.pi,smpSize-2*smpPadding))
+
+rounsample=np.array([0,0,0,0,0.5,0.6,0.8,1,1.5,2,3,4,5,7,9,12,15,18,19,20,21,21.5,22,22.5,23,23.2,23.1,23.1,23.2,23.3,23.2,23.1,28,23.2,23.2,22.5,22,21.5,
+                     21,20.5,20,19,17,15,12,9,7,5,4,3,2,1.5,1,1,0.8,0.4,0,0,0,0])
+
+smp=np.zeros(60*3)                     
+fill=0
+for i in range(60):
+    smp[fill:fill+2]=rounsample[i]
+    fill+=2
+#    
+smp=calSmp2
 
 sinesig = t1d.calcSignal(smp)
-#signal+=storednoise
+sinesig+=storednoise[:len(sinesig)]
 rec = t1d.reconstruct(sinesig)
-plt.plot(smp,label='o')
+
+
+plt.plot(np.arange(50,50+len(smp)),smp,label='o')
 plt.plot(sinesig*0.01,label='s/100')
 plt.plot(rec,label='rec')
+
+
+rec2=t1d2.reconstruct(sinesig)
+avgrec=gaussian_filter(0.5*(rec+rec2),2)
+plt.plot(rec2,label='rec2')
+plt.plot(avgrec,label='avg')
+
 plt.legend()
+
+
+#plt.plot(calSig2/40,label='S/40')
+#plt.plot(np.append(np.zeros(50),calSmp),label='O')
+#plt.plot(t1d2.reconstruct(calSig),label='R')
+#plt.legend()
