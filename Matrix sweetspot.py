@@ -34,9 +34,10 @@ sweetSpot=gaussian_filter(sweetSpot,5)
 
 t1d= tm.Tomography_1D(sweetSpot)
 t1d2=tm.Tomography_1D(sweetSpot)
+t1d3=tm.Tomography_1D(sweetSpot)
 
 calSize=500
-calSmp=20*np.ones(calSize)
+calSmp=2*np.ones(calSize)
 calSmp[40:50]=0
 calSmp[60:70]=0
 calSmp[80:100]=0
@@ -49,16 +50,15 @@ sg=3
 calSmp=gaussian_filter(calSmp,sg)
 
 np.random.seed(2)
-noisesize=30
+noisesize=0.1
 storednoise=noisesize-noisesize*2*np.random.rand(600)
 
 calSig=t1d.calcSignal(calSmp)
 calSig+=storednoise[:len(calSig)]
 t1d.calibrate(np.append(np.zeros(50),calSmp),calSig)
 
-calSize=400
 calSmp2=np.zeros(calSize)
-calSmp2[50:350]=20
+calSmp2[50:450]=2
 calSmp2=gaussian_filter(calSmp2,sg)
 
 storednoise=noisesize-noisesize*2*np.random.rand(600)
@@ -66,6 +66,14 @@ calSig2=t1d2.calcSignal(calSmp2)
 calSig2+=storednoise[:len(calSig2)]
 t1d2.calibrate(np.append(np.zeros(50),calSmp2),calSig2)
 
+calSmp3=np.zeros(calSize)
+calSmp3[100:200]=2
+calSmp3[300:400]=2
+
+#storednoise=noisesize-noisesize*2*np.random.rand(600)
+#calSig3=t1d3.calcSignal(calSmp3)
+#calSig3+=storednoise[:len(calSig3)]
+#t1d3.calibrate(np.append(np.zeros(50),calSmp3),calSig3)
 
 smpSize=500
 smpPadding=2
@@ -85,19 +93,22 @@ for i in range(60):
 #    
 smp=calSmp2
 
-sinesig = t1d.calcSignal(smp)
-sinesig+=storednoise[:len(sinesig)]
-rec = t1d.reconstruct(sinesig)
+noisesize=5
+storednoise=noisesize-noisesize*2*np.random.rand(600)
+
+testsig = t1d.calcSignal(smp)
+testsig+=storednoise[:len(testsig)]
+rec = t1d.reconstruct(testsig)
+rec2=t1d2.reconstruct(testsig)
+#rec3=t1d3.reconstruct(testsig)
+avgrec=((rec+rec2)/2.0)
 
 
 plt.plot(np.arange(50,50+len(smp)),smp,label='o')
-plt.plot(sinesig*0.01,label='s/100')
+plt.plot(testsig*0.01,label='s/100')
 plt.plot(rec,label='rec')
-
-
-rec2=t1d2.reconstruct(sinesig)
-avgrec=gaussian_filter(0.5*(rec+rec2),2)
 plt.plot(rec2,label='rec2')
+#plt.plot(rec3,label='rec3')
 plt.plot(avgrec,label='avg')
 
 plt.legend()

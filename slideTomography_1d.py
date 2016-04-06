@@ -61,7 +61,7 @@ class Tomography_1D(object):
         if isinstance(signal,ndarray):
         
             # Solve Ax = b
-
+            
             N = self._sweetSpot.shape[0]
             lb=int(N/2)
             S=signal.shape[0]
@@ -80,11 +80,12 @@ class Tomography_1D(object):
             for i in xrange(lb,B-N+lb,1):
                 A[i-lb,:] = padSig[i+N:i+N+N]
 
-            A2=A[100:100+N,0:N]
-            b2=b[100:100+N]
-            self.CA,self.coeff_resid,self.coeff_rank,self.coeff_s = lstsq(A2,b2)
 
-        
+            self.CA,self.coeff_resid,self.coeff_rank,self.coeff_s = lstsq(A,b)
+            filt=exp(-0.5*((arange(0,N)-(0.5*N))/(0.2*N))**2)
+#            filt=np.arange(N)
+            self.weightedCA=self.CA*filt
+            self.weightedCA*=sum(self.CA)/sum(self.weightedCA)
         
     def reconstruct(self, signal):
         """
@@ -98,11 +99,10 @@ class Tomography_1D(object):
         rec = zeros(S+N)
         
         lb=int(N)/2        
-        lf=int(N)/4
-        
+                
         padSig=np.zeros(N+S+N)        
         padSig[0:S]=signal[:]
         
         for i in xrange(0,S):
             rec[i] = sum(padSig[i:i+N]*self.CA)
-        return rec
+        return rec[0:S]
