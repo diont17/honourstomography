@@ -19,6 +19,8 @@ class Tomography_1D(object):
         - `sweetSpot`:
         """
         self._sweetSpot = sweetSpot
+        self.Amatrix=zeros([0,sweetSpot.shape[0]])
+        self.b=zeros(0)
 
 
     def calcSignal(self, smp):
@@ -48,51 +50,42 @@ class Tomography_1D(object):
             print "Sample too small - sweet spot size: %d"%N
             return None
             
-            
-    def calibrate(self, pattern, signal):
-        """
+    def addTrainingData(self,pattern,signal):
+        N = self._sweetSpot.shape[0]
+        lb=int(N/2)
+        S=signal.shape[0]
+        B=pattern.shape[0]
         
-        Arguments:
-        - `pattern`:
-        """
-        lb=self._sweetSpot.shape[0]/2
-        lf=self._sweetSpot.shape[0]/2
-                
-        if isinstance(signal,ndarray):
+        newA=zeros([B-N,N])
+        newb=pattern[lb:B-lb]
         
-            # Solve Ax = b
+        padSig=np.zeros(S+N+N)        
+        padSig[N:N+S]=signal[:]
+        
+        for i in xrange(lb,B-N+lb,1):
+            newA[i-lb,:] = padSig[i+N:i+N+N]
             
-            N = self._sweetSpot.shape[0]
-            lb=int(N/2)
-            S=signal.shape[0]
-            B=pattern.shape[0]
-#            A = zeros([signal.shape[0]-N,N])
-#            A=zeros([S-N,N])
-            A=zeros([B-N,N])
-#            b = signal[:-N] - pattern[N/2:-N/2-N]
-            b=pattern[lb:B-lb]
-            self.Amatrix=A
-            self.b=b           
-            
-            padSig=np.zeros(S+N+N)        
-            padSig[N:N+S]=signal[:]
-            
-            for i in xrange(lb,B-N+lb,1):
-                A[i-lb,:] = padSig[i+N:i+N+N]
+        self.b=concatenate((self.b,newb),axis=0)
+        self.Amatrix=concatenate((self.Amatrix,newA),axis=0)
+        
+        self.calibrate()
+        return
+        
+    def calibrate(self):
 
+        # Solve Ax = b
+        N = self._sweetSpot.shape[0]
+        lb=int(N/2)
+        S=self.Amatrix.shape[0]
+        B=self.b.shape[0]
 
-            self.CA,self.coeff_resid,self.coeff_rank,self.coeff_s = lstsq(A,b)
-            filt=exp(-0.5*((arange(0,N)-(0.5*N))/(0.2*N))**2)
-#            filt=np.arange(N)
-            self.weightedCA=self.CA*filt
-            self.weightedCA*=sum(self.CA)/sum(self.weightedCA)
+        self.CA,self.coeff_resid,self.coeff_rank,self.coeff_s = lstsq(self.Amatrix,self.b)
+        filt=exp(-0.5*((arange(0,N)-(0.5*N))/(0.2*N))**2)
+        self.weightedCA=self.CA*filt
+        self.weightedCA*=sum(self.CA)/sum(self.weightedCA)
+        return
         
     def reconstruct(self, signal):
-        """
-        
-        Arguments:
-        - `signal`:
-        """
 
         N = self._sweetSpot.shape[0]
         S = signal.shape[0]

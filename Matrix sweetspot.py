@@ -32,7 +32,7 @@ sweetSpot=gaussian_filter(sweetSpot,5)
 #sweetSpot=gaussian_window(100,40)
 
 
-t1d= tm.Tomography_1D(sweetSpot)
+t1d1= tm.Tomography_1D(sweetSpot)
 t1d2=tm.Tomography_1D(sweetSpot)
 t1d3=tm.Tomography_1D(sweetSpot)
 
@@ -53,9 +53,9 @@ np.random.seed(2)
 noisesize=0.1
 storednoise=noisesize-noisesize*2*np.random.rand(600)
 
-calSig=t1d.calcSignal(calSmp)
+calSig=t1d1.calcSignal(calSmp)
 calSig+=storednoise[:len(calSig)]
-t1d.calibrate(np.append(np.zeros(50),calSmp),calSig)
+t1d1.addTrainingData(np.append(np.zeros(50),calSmp),calSig)
 
 calSmp2=np.zeros(calSize)
 calSmp2[50:450]=2
@@ -64,16 +64,20 @@ calSmp2=gaussian_filter(calSmp2,sg)
 storednoise=noisesize-noisesize*2*np.random.rand(600)
 calSig2=t1d2.calcSignal(calSmp2)
 calSig2+=storednoise[:len(calSig2)]
-t1d2.calibrate(np.append(np.zeros(50),calSmp2),calSig2)
+
+t1d1.addTrainingData(np.append(np.zeros(50),calSmp),calSig)
+t1d2.addTrainingData(np.append(np.zeros(50),calSmp2),calSig2)
 
 calSmp3=np.zeros(calSize)
 calSmp3[100:200]=2
 calSmp3[300:400]=2
 
-#storednoise=noisesize-noisesize*2*np.random.rand(600)
-#calSig3=t1d3.calcSignal(calSmp3)
-#calSig3+=storednoise[:len(calSig3)]
-#t1d3.calibrate(np.append(np.zeros(50),calSmp3),calSig3)
+storednoise=noisesize-noisesize*2*np.random.rand(600)
+calSig3=t1d2.calcSignal(calSmp3)
+calSig3+=storednoise[:len(calSig3)]
+t1d1.addTrainingData(np.append(np.zeros(50),calSmp),calSig)
+
+
 
 smpSize=500
 smpPadding=2
@@ -85,21 +89,21 @@ smp[smpPadding:-smpPadding] =  np.sin(np.linspace(0,10*np.pi,smpSize-2*smpPaddin
 rounsample=np.array([0,0,0,0,0.5,0.6,0.8,1,1.5,2,3,4,5,7,9,12,15,18,19,20,21,21.5,22,22.5,23,23.2,23.1,23.1,23.2,23.3,23.2,23.1,28,23.2,23.2,22.5,22,21.5,
                      21,20.5,20,19,17,15,12,9,7,5,4,3,2,1.5,1,1,0.8,0.4,0,0,0,0])
 
-smp=np.zeros(60*3)                     
+smp=np.zeros(60*3)
 fill=0
 for i in range(60):
     smp[fill:fill+2]=rounsample[i]
     fill+=2
-#    
-smp=calSmp2
+    
+smp=calSmp
 
-noisesize=5
+noisesize=0
 storednoise=noisesize-noisesize*2*np.random.rand(600)
 
-testsig = t1d.calcSignal(smp)
+testsig = t1d1.calcSignal(smp)
 testsig+=storednoise[:len(testsig)]
-rec = t1d.reconstruct(testsig)
-rec2=t1d2.reconstruct(testsig)
+rec = t1d1.reconstruct(testsig)
+rec2= t1d2.reconstruct(testsig)
 #rec3=t1d3.reconstruct(testsig)
 avgrec=((rec+rec2)/2.0)
 
