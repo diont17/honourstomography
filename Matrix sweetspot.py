@@ -31,24 +31,24 @@ t1d3=tm.Tomography_1D(sweetSpot)
 #%%Training data 1: Block with lots of holes, different sizes
 
 calSize=500
-calSmp=2*np.ones(calSize)
-calSmp[40:50]=0
-calSmp[60:70]=0
-calSmp[80:100]=0
-calSmp[120:150]=0
-calSmp[180:220]=0
-calSmp[260:300]=0
-calSmp[450:500]=0
+calSmp1=2*np.ones(calSize)
+calSmp1[40:50]=0
+calSmp1[60:70]=0
+calSmp1[80:100]=0
+calSmp1[120:150]=0
+calSmp1[180:220]=0
+calSmp1[260:300]=0
+calSmp1[450:500]=0
 
 sg=3
-calSmp=gaussian_filter(calSmp,sg)
+calSmp1=gaussian_filter(calSmp1,sg)
 
 np.random.seed(2)
 noisesize=0.1
 storednoise=noisesize-noisesize*2*np.random.rand(600)
 
-calSig=t1d1.calcSignal(calSmp)
-calSig+=storednoise[:len(calSig)]
+calSig1=t1d1.calcSignal(calSmp1)
+calSig1+=storednoise[:len(calSig1)]
 
 #Training data 2: Solid block
 calSmp2=np.zeros(calSize)
@@ -71,24 +71,29 @@ calSig3+=storednoise[:len(calSig3)]
 
 #%%Train t1d
 
-t1d1.addTrainingData(np.append(np.zeros(50),calSmp),calSig)
+t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1)
 
-t1d1.addTrainingData(np.append(np.zeros(50),calSmp),calSig)
+t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1)
 t1d2.addTrainingData(np.append(np.zeros(50),calSmp2),calSig2)
 
 t1d1.addTrainingData(np.append(np.zeros(50),calSmp3),calSig3)
 
 #Setup an array of 50 t1ds, which will be trained with data:signal offsets
 shiftedt1ds=list()
-for i in xrange(100):
+shiftrange=80
+for i in xrange(shiftrange):
     shiftedt1ds.append(tm.Tomography_1D(sweetSpot))
-    shiftcalSmp2=np.append(np.zeros(100),calSmp2)[i:100+len(calSmp2)]
+    shiftcalSmp1=np.append(np.zeros(shiftrange),calSmp1)[i:shiftrange+len(calSmp1)]
+    shiftcalSmp2=np.append(np.zeros(shiftrange),calSmp2)[i:shiftrange+len(calSmp2)]
+    shiftcalSmp3=np.append(np.zeros(shiftrange),calSmp3)[i:shiftrange+len(calSmp3)]
+    
     shiftedt1ds[i].addTrainingData(shiftcalSmp2,calSig2)
+    shiftedt1ds[i].addTrainingData(shiftcalSmp1,calSig1)
+    shiftedt1ds[i].addTrainingData(shiftcalSmp3,calSig3)
 
 
-#%%
+#%%Reconstruction Tests
 
-#Reconstruction Tests
 smpSize=500
 smpPadding=2
 
@@ -103,11 +108,12 @@ rounsmp=np.zeros(60*3)
 fill=0
 rounsmp=np.zeros(smpSize)
 for i in range(60):
-    rounsmp[fill:fill+4]=rounsample[i]
-    fill+=4
-smp=rounsmp
+    rounsmp[fill:fill+2]=rounsample[i]
+    rounsmp[fill+200:fill+202]=rounsample[i]
+    fill+=2
+smp=sinesmp
 
-noisesize=0
+noisesize=2
 storednoise=noisesize-noisesize*2*np.random.rand(600)
 
 
@@ -119,25 +125,38 @@ rec2= t1d2.reconstruct(testsig)
 avgrec= np.zeros_like(rec)
 shiftweight=np.exp(-0.5*((np.arange(0,100)-(50))/(20))**2)
 
-shiftrecs=np.zeros((100,len(rec)))
-rawshiftrecs=np.zeros((100,len(rec)))
+shiftrecs=np.zeros((shiftrange,len(rec)))
+rawshiftrecs=np.zeros((shiftrange,len(rec)))
 
-for i in range(len(shiftedt1ds)):
+for i in xrange(shiftrange):
     rawshiftrecs[i]=shiftedt1ds[i].reconstruct(testsig)
-    padrec=np.append(np.zeros(50),rawshiftrecs[i])
-#    shiftrecs[i]=padrec[i:i+len(rec)]
-    
-avgrec*=(1.0/len(shiftedt1ds))
+    padrec=np.zeros(shiftrange+len(rec))
+    padrec[shiftrange/2:-shiftrange/2]=rawshiftrecs[i]
+
+    shiftrecs[i]=rawshiftrecs[i]
+    shiftrecs[i]=padrec[(shiftrange-i):(shiftrange-i)+len(rec)]
+    if i>0: 
+        avgrec+=shiftrecs[i]
+        
+avgrec*=1.0/(shiftrange)
+
+
+#%% Draw Graphs
 
 plt.figure()
 plt.plot(np.arange(50,50+len(smp)),smp,label='o')
-#plt.plot(testsig*0.01,label='s/100')
+plt.plot(testsig*0.01,label='s/100')
 plt.plot(rec,label='rec (multiple trainings)')
 plt.plot(rec2,label='rec2 (1 training)')
 plt.plot(avgrec,label='rec (average of shifted trainings)')
 plt.legend()
 
 plt.figure()
-for m in rawshiftrecs:
+for m in shiftrecs:
     plt.plot(m)
-plt.plot(np.arange(50,50+len(smp)),smp)
+plt.plot(np.arange(50,50+len(smp)),smp,label='o')
+plt.plot(shiftrecs[0],'.-',label=0)
+plt.plot(shiftrecs[shiftrange/2],'-',label=(shiftrange/2))
+plt.plot(shiftrecs[shiftrange-1],'.-',label='99')
+plt.plot(avgrec,'^',label='avg')
+plt.legend()
