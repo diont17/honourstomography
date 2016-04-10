@@ -6,7 +6,7 @@ Created on Wed Mar 23 20:58:05 2016
 """
 
 import numpy as np
-import scipy as sci
+import scipy as scipy
 import matplotlib.pylab as plt
 import numpy.linalg as linalg
 from scipy.ndimage.filters import gaussian_filter
@@ -20,7 +20,7 @@ sweetSptSize=70
 sweetSptPadding=15
 
 sweetSpot= np.zeros(sweetSptSize + 2*sweetSptPadding)
-sweetSpot[swSptPadding:-swSptPadding]=1
+sweetSpot[sweetSptPadding:-sweetSptPadding]=1
 sweetSpot=gaussian_filter(sweetSpot,5)
 #sweetSpot=gaussian_window(100,40)
 
@@ -56,39 +56,39 @@ calSig2=t1d2.calcSignal(calSmp2)
 #
 calSmp3=np.zeros(calSize)
 calSmp3[100:200]=2
-calSmp3[250:400]=2
+calSmp3[250:400]=1
 
 calSig3=t1d2.calcSignal(calSmp3)
 calSize=len(calSig3)
 #%%Train t1d
 np.random.seed(2)
-noisesize=0.0001*max(calSig2)
+noisesize=0.05*max(calSig2)
 
+#storednoise=noisesize-2*noisesize*np.random.rand(calSize)
+#t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1+storednoise)
+#storednoise=noisesize-2*noisesize*np.random.rand(calSize)
+#t1d1.addTrainingData(np.append(np.zeros(50),calSmp2),calSig2+storednoise)
 storednoise=noisesize-2*noisesize*np.random.rand(calSize)
-t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1+storednoise)
-storednoise=noisesize-2*noisesize*np.random.rand(calSize)
-t1d1.addTrainingData(np.append(np.zeros(50),calSmp2),calSig2+storednoise)
-storednoise=noisesize-2*noisesize*np.random.rand(calSize)
-t1d1.addTrainingData(np.append(np.zeros(50),calSmp3),calSig3+storednoise)
+#t1d1.addTrainingData(np.append(np.zeros(50),calSmp3),calSig3+storednoise)
 
-t1d2.addTrainingData(np.append(np.zeros(50),calSmp2),calSig2+storednoise)
-
+t1d2.addTrainingData(np.append(np.zeros(50),calSmp3),calSig3+storednoise)
 
 #Setup an array of t1ds, which will be trained with data:signal offsets
+shiftrange=30
 shiftedt1ds=list()
-shiftrange=80
 for i in xrange(shiftrange):
     shiftedt1ds.append(tm.Tomography_1D(sweetSpot))
 #    shiftcalSmp1=np.append(np.zeros(50+shiftrange/2),calSmp1)[i:shiftrange+len(calSmp1)]
     shiftcalSmp2=np.append(np.zeros(50+shiftrange/2),calSmp2)[i:shiftrange+len(calSmp2)]
-    shiftcalSmp3=np.append(np.zeros(50+shiftrange/2),calSmp3)[i:shiftrange+len(calSmp3)]
+#    shiftcalSmp3=np.append(np.zeros(50+shiftrange/2),calSmp3)[i:shiftrange+len(calSmp3)]
 
     storednoise=noisesize-noisesize*2*np.random.rand(calSize)
     shiftedt1ds[i].addTrainingData(shiftcalSmp2,calSig2+storednoise)
+    print 'optimized {0}'.format(i)
 #    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
 #    shiftedt1ds[i].addTrainingData(shiftcalSmp1,calSig1+storednoise)
-    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
-    shiftedt1ds[i].addTrainingData(shiftcalSmp3,calSig3+storednoise)
+#    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
+#    shiftedt1ds[i].addTrainingData(shiftcalSmp3,calSig3+storednoise)
 
 
 #%%Reconstruction Tests
@@ -113,28 +113,28 @@ for i in xrange(60):
     
 smp=np.linspace(0,2,300)
 smp=gaussian_filter(calSmp3,2)
+smp=calSmp1
+testsig = t1d2.calcSignal(smp)
 
-testsig = t1d1.calcSignal(smp)
-
-noisesize=0.0*max(testsig)
+noisesize=0.1*max(testsig)
 
 storednoise=noisesize-noisesize*2*np.random.rand(600)
 testsig+=storednoise[:len(testsig)]
-rec = t1d1.reconstruct(testsig)
+#rec = t1d1.reconstruct(testsig)
 rec2= t1d2.reconstruct(testsig)
 
-avgrec= np.zeros_like(rec)
+avgrec= np.zeros_like(rec2)
 shiftweight=np.exp(-0.5*((np.arange(0,100)-(50))/(20))**2)
 
-shiftrecs=np.zeros((shiftrange,len(rec)))
-rawshiftrecs=np.zeros((shiftrange,len(rec)))
+shiftrecs=np.zeros((shiftrange,len(rec2)))
+rawshiftrecs=np.zeros((shiftrange,len(rec2)))
 
 for i in xrange(shiftrange):
     rawshiftrecs[i]=shiftedt1ds[i].reconstruct(testsig)
-    padrec=np.zeros(shiftrange+len(rec))
-    padrec[shiftrange/2:len(rec)+shiftrange/2]=rawshiftrecs[i]
+    padrec=np.zeros(shiftrange+len(rec2))
+    padrec[shiftrange/2:len(rec2)+shiftrange/2]=rawshiftrecs[i]
 
-    shiftrecs[i]=padrec[(shiftrange-i):(shiftrange-i)+len(rec)]
+    shiftrecs[i]=padrec[(shiftrange-i):(shiftrange-i)+len(rec2)]
     if i>0: 
         avgrec+=shiftrecs[i]
         
@@ -145,11 +145,23 @@ avgrec*=1.0/(shiftrange)
 plt.figure()
 plt.plot(np.arange(50,50+len(smp)),smp,label='o')
 plt.plot(testsig*0.01,label='s/100')
-plt.plot(rec,label='rec (multiple trainings)')
+#plt.plot(rec,label='rec (multiple trainings)')
 plt.plot(rec2,label='rec2 (1 training)')
 plt.plot(avgrec,label='rec (average of shifted trainings)')
+#plt.legend()
+
+plt.figure()
+plt.plot(t1d2.CA,label='opt')
+plt.plot(t1d2.CA0,label='lstsq')
 plt.legend()
 
+plt.figure()
+t1d2.CA=t1d2.CA0
+rec2=t1d2.reconstruct(testsig)
+plt.plot(np.arange(50,50+len(smp)),smp,label='o')
+plt.plot(testsig*0.01,label='s/100')
+#plt.plot(rec,label='rec (multiple trainings)')
+plt.plot(rec2,label='rec2 lstsq')
 
 plt.figure()
 for m in shiftrecs:

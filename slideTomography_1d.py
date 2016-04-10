@@ -5,8 +5,9 @@ Created on Wed Mar 23 20:58:27 2016
 @author: Dion
 """
 
-from pylab import *
-
+import numpy as np
+import scipy
+from scipy.optimize import minimize
 
 class Tomography_1D(object):
     """
@@ -19,8 +20,9 @@ class Tomography_1D(object):
         - `sweetSpot`:
         """
         self._sweetSpot = sweetSpot
-        self.Amatrix=zeros([0,sweetSpot.shape[0]])
-        self.b=zeros(0)
+        self.Amatrix= np.zeros([0,sweetSpot.shape[0]])
+        self.b=np.zeros(0)
+        return
 
 
     def calcSignal(self, smp):
@@ -44,7 +46,7 @@ class Tomography_1D(object):
             for i in xrange(lb,M+N+lb):
                 signal.append(sum(self._sweetSpot*padSmp[i-lb:i+lf]))
 
-            return array(signal)
+            return np.array(signal)
 
         else:
             print "Sample too small - sweet spot size: %d"%N
@@ -56,7 +58,7 @@ class Tomography_1D(object):
         S=signal.shape[0]
         B=pattern.shape[0]
         
-        newA=zeros([B-N,N])
+        newA=np.zeros([B-N,N])
         newb=pattern[lb:B-lb]
         
         padSig=np.zeros(S+N+N)        
@@ -65,11 +67,17 @@ class Tomography_1D(object):
         for i in xrange(lb,B-N+lb,1):
             newA[i-lb,:] = padSig[i+N:i+N+N]
             
-        self.b=concatenate((self.b,newb),axis=0)
-        self.Amatrix=concatenate((self.Amatrix,newA),axis=0)
+        self.b=np.concatenate((self.b,newb),axis=0)
+        self.Amatrix=np.concatenate((self.Amatrix,newA),axis=0)
         
         self.calibrate()
         return
+        
+    def lossfn(self,CAx):
+        out=np.dot(self.Amatrix,CAx)
+        return np.sum(np.abs(out-self.b)) + 16000 * np.std(CAx)
+#        return np.sum(np.abs(out-self.b)) + 80*np.sum(np.abs(np.diff(CAx)))
+        
         
     def calibrate(self):
 
@@ -79,17 +87,20 @@ class Tomography_1D(object):
         S=self.Amatrix.shape[0]
         B=self.b.shape[0]
 
-        self.CA,self.coeff_resid,self.coeff_rank,self.coeff_s = lstsq(self.Amatrix,self.b)
-        filt=exp(-0.5*((arange(0,N)-(0.5*N))/(0.2*N))**2)
-        self.weightedCA=self.CA*filt
-        self.weightedCA*=sum(self.CA)/sum(self.weightedCA)
-        return
+        self.CA0,_,_,_ = np.linalg.lstsq(self.Amatrix,self.b)
+#        filt=exp(-0.5*((arange(0,N)-(0.5*N))/(0.2*N))**2)
+#        self.weightedCA=self.CA*filt
+#        self.weightedCA*=sum(self.CA)/sum(self.weightedCA)
+
+        self.optres = minimize(self.lossfn, x0=np.ones(N))
+        self.CA=self.optres.x        
+  
         
     def reconstruct(self, signal):
 
         N = self._sweetSpot.shape[0]
         S = signal.shape[0]
-        rec = zeros(S+N)
+        rec = np.zeros(S+N)
         
         lb=int(N)/2        
                 
@@ -97,5 +108,5 @@ class Tomography_1D(object):
         padSig[0:S]=signal[:]
         
         for i in xrange(0,S):
-            rec[i] = sum(padSig[i:i+N]*self.CA)
+            rec[i] = np.sum(padSig[i:i+N]*self.CA)
         return rec[0:S]
