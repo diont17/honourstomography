@@ -16,11 +16,11 @@ import slideTomography_1d as tm
 #reload(tm)
 #%%
 
-swSptSize=70
-swSptPadding=15
+sweetSpotSize=70
+sweetSpotPadding=15
 
-sweetSpot= np.zeros(swSptSize + 2*swSptPadding)
-sweetSpot[swSptPadding:-swSptPadding]=1
+sweetSpot= np.zeros(sweetSpotSize + 2*sweetSpotPadding)
+sweetSpot[sweetSpotPadding:-sweetSpotPadding]=1
 sweetSpot=gaussian_filter(sweetSpot,5)
 #sweetSpot=gaussian_window(100,40)
 
@@ -42,55 +42,56 @@ calSmp1[450:500]=0
 
 sg=3
 calSmp1=gaussian_filter(calSmp1,sg)
-
-np.random.seed(2)
-noisesize=0.1
-storednoise=noisesize-noisesize*2*np.random.rand(600)
-
 calSig1=t1d1.calcSignal(calSmp1)
-calSig1+=storednoise[:len(calSig1)]
 
 #Training data 2: Solid block
 calSmp2=np.zeros(calSize)
 calSmp2[50:450]=2
 calSmp2=gaussian_filter(calSmp2,sg)
 
-storednoise=noisesize-noisesize*2*np.random.rand(600)
 calSig2=t1d2.calcSignal(calSmp2)
-calSig2+=storednoise[:len(calSig2)]
 
 #Training data 3: Block with one hole
 #
 calSmp3=np.zeros(calSize)
 calSmp3[100:200]=2
 calSmp3[300:400]=2
-
-storednoise=noisesize-noisesize*2*np.random.rand(600)
 calSig3=t1d2.calcSignal(calSmp3)
-calSig3+=storednoise[:len(calSig3)]
 
 #%%Train t1d
+np.random.seed(2)
+noisesize=0.05*max(calSig2)
+calSize+=100
 
-t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1)
+storednoise=noisesize-noisesize*2*np.random.rand(calSize)
+t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1+storednoise)
 
-t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1)
-t1d2.addTrainingData(np.append(np.zeros(50),calSmp2),calSig2)
+storednoise=noisesize-noisesize*2*np.random.rand(calSize)
+#t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1+storednoise)
+t1d2.addTrainingData(np.append(np.zeros(50),calSmp2),calSig2+storednoise)
 
-t1d1.addTrainingData(np.append(np.zeros(50),calSmp3),calSig3)
+storednoise=noisesize-noisesize*2*np.random.rand(calSize)
+t1d1.addTrainingData(np.append(np.zeros(50),calSmp3),calSig3+storednoise)
 
 #Setup an array of 50 t1ds, which will be trained with data:signal offsets
 shiftedt1ds=list()
 shiftrange=80
 for i in xrange(shiftrange):
     shiftedt1ds.append(tm.Tomography_1D(sweetSpot))
-    shiftcalSmp1=np.append(np.zeros(shiftrange),calSmp1)[i:shiftrange+len(calSmp1)]
-    shiftcalSmp2=np.append(np.zeros(shiftrange),calSmp2)[i:shiftrange+len(calSmp2)]
-    shiftcalSmp3=np.append(np.zeros(shiftrange),calSmp3)[i:shiftrange+len(calSmp3)]
     
-    shiftedt1ds[i].addTrainingData(shiftcalSmp2,calSig2)
-    shiftedt1ds[i].addTrainingData(shiftcalSmp1,calSig1)
-    shiftedt1ds[i].addTrainingData(shiftcalSmp3,calSig3)
+    shiftcalSmp1=np.append(np.zeros(shiftrange/2+50),calSmp1)[i:shiftrange+len(calSmp1)]
+    shiftcalSmp2=np.append(np.zeros(shiftrange/2+50),calSmp2)[i:shiftrange+len(calSmp2)]
+    shiftcalSmp3=np.append(np.zeros(shiftrange/2+50),calSmp3)[i:shiftrange+len(calSmp3)]
 
+    storednoise=noisesize-noisesize*2*np.random.rand(calSize)    
+    shiftedt1ds[i].addTrainingData(shiftcalSmp2,calSig2+storednoise)
+    
+#    storednoise=noisesize-noisesize*2*np.random.rand(calSize)    
+#    shiftedt1ds[i].addTrainingData(shiftcalSmp1,calSig1+storednoise)
+#    
+#    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
+#    shiftedt1ds[i].addTrainingData(shiftcalSmp3,calSig3+storednoise)
+#
 
 #%%Reconstruction Tests
 
@@ -111,14 +112,13 @@ for i in range(60):
     rounsmp[fill:fill+2]=rounsample[i]
     rounsmp[fill+200:fill+202]=rounsample[i]
     fill+=2
-smp=sinesmp
-
-noisesize=2
-storednoise=noisesize-noisesize*2*np.random.rand(600)
-
+smp=calSmp2
 
 testsig = t1d1.calcSignal(smp)
-testsig+=storednoise[:len(testsig)]
+
+noisesize=0.1*max(testsig)
+testsig+=noisesize-noisesize*2*np.random.rand(len(testsig))
+
 rec = t1d1.reconstruct(testsig)
 rec2= t1d2.reconstruct(testsig)
 
@@ -146,7 +146,7 @@ avgrec*=1.0/(shiftrange)
 plt.figure()
 plt.plot(np.arange(50,50+len(smp)),smp,label='o')
 plt.plot(testsig*0.01,label='s/100')
-plt.plot(rec,label='rec (multiple trainings)')
+#plt.plot(rec,label='rec (multiple trainings)')
 plt.plot(rec2,label='rec2 (1 training)')
 plt.plot(avgrec,label='rec (average of shifted trainings)')
 plt.legend()
