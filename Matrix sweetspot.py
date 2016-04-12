@@ -58,6 +58,7 @@ calSmp3=np.zeros(calSize)
 calSmp3[100:200]=2
 calSmp3[250:400]=1
 
+
 calSig3=t1d2.calcSignal(calSmp3)
 calSize=len(calSig3)
 #%%Train t1d
@@ -71,25 +72,32 @@ noisesize=0.05*max(calSig2)
 storednoise=noisesize-2*noisesize*np.random.rand(calSize)
 #t1d1.addTrainingData(np.append(np.zeros(50),calSmp3),calSig3+storednoise)
 
-t1d2.addTrainingData(np.append(np.zeros(50),calSmp3),calSig3+storednoise)
+t1d2.addTrainingData(np.append(np.zeros(50),calSmp2),calSig2+storednoise)
 
 #Setup an array of t1ds, which will be trained with data:signal offsets
-shiftrange=30
+shiftrange=50
 shiftedt1ds=list()
+
+
+#for i in xrange(shiftrange):
+#    shiftedt1ds.append(tm.Tomography_1D(sweetSpot))
+##    shiftcalSmp1=np.append(np.zeros(50+shiftrange/2),calSmp1)[i:shiftrange+len(calSmp1)]
+#    shiftcalSmp2=np.append(np.zeros(50+shiftrange/2),calSmp2)[i:shiftrange+len(calSmp2)]
+##    shiftcalSmp3=np.append(np.zeros(50+shiftrange/2),calSmp3)[i:shiftrange+len(calSmp3)]
+#
+#    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
+#    shiftedt1ds[i].addTrainingData(shiftcalSmp2,calSig2+storednoise)
+#    print 'optimized {0}'.format(i)
+##    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
+##    shiftedt1ds[i].addTrainingData(shiftcalSmp1,calSig1+storednoise)
+##    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
+##    shiftedt1ds[i].addTrainingData(shiftcalSmp3,calSig3+storednoise)
+    
+CAin=np.load('outCA.npz')
 for i in xrange(shiftrange):
+    key='arr_{0}'.format(i)
     shiftedt1ds.append(tm.Tomography_1D(sweetSpot))
-#    shiftcalSmp1=np.append(np.zeros(50+shiftrange/2),calSmp1)[i:shiftrange+len(calSmp1)]
-    shiftcalSmp2=np.append(np.zeros(50+shiftrange/2),calSmp2)[i:shiftrange+len(calSmp2)]
-#    shiftcalSmp3=np.append(np.zeros(50+shiftrange/2),calSmp3)[i:shiftrange+len(calSmp3)]
-
-    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
-    shiftedt1ds[i].addTrainingData(shiftcalSmp2,calSig2+storednoise)
-    print 'optimized {0}'.format(i)
-#    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
-#    shiftedt1ds[i].addTrainingData(shiftcalSmp1,calSig1+storednoise)
-#    storednoise=noisesize-noisesize*2*np.random.rand(calSize)
-#    shiftedt1ds[i].addTrainingData(shiftcalSmp3,calSig3+storednoise)
-
+    shiftedt1ds[i].CA=CAin[key]
 
 #%%Reconstruction Tests
 
@@ -98,7 +106,7 @@ smpPadding=2
 
 # Sine function
 sinesmp  = np.zeros([smpSize])
-sinesmp[smpPadding:-smpPadding] =  2*np.sin(np.linspace(0,16*np.pi,smpSize-2*smpPadding))
+sinesmp[smpPadding:-smpPadding] =  2*np.sin(np.linspace(0,7*np.pi,smpSize-2*smpPadding))+2
 
 rounsample=np.array([0,0,0,0,0.5,0.6,0.8,1,1.5,2,3,4,5,7,9,12,15,18,19,20,21,21.5,22,22.5,23,23.2,23.1,23.1,23.2,23.3,23.2,23.1,35,23.2,23.2,
                      22.5,22,21.5,21,20.5,20,19,17,15,12,9,7,5,4,3,2,1.5,1,1,0.8,0.4,0,0,0,0])
@@ -113,6 +121,7 @@ for i in xrange(60):
     
 smp=np.linspace(0,2,300)
 smp=gaussian_filter(calSmp3,2)
+
 smp=calSmp1
 testsig = t1d2.calcSignal(smp)
 
@@ -148,7 +157,7 @@ plt.plot(testsig*0.01,label='s/100')
 #plt.plot(rec,label='rec (multiple trainings)')
 plt.plot(rec2,label='rec2 (1 training)')
 plt.plot(avgrec,label='rec (average of shifted trainings)')
-#plt.legend()
+plt.legend()
 
 plt.figure()
 plt.plot(t1d2.CA,label='opt')
@@ -172,3 +181,7 @@ plt.plot(shiftrecs[shiftrange/2],'-',label=(shiftrange/2))
 plt.plot(shiftrecs[shiftrange-1],'.-',label=i)
 plt.plot(avgrec,'^',label='avg')
 plt.legend()
+
+#%% Output Optimized CA arrays
+np.savez('outCA.npz',*[shiftedt1ds[x].CA for x in xrange(shiftrange)])
+    

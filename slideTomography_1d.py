@@ -6,7 +6,6 @@ Created on Wed Mar 23 20:58:27 2016
 """
 
 import numpy as np
-import scipy
 from scipy.optimize import minimize
 
 class Tomography_1D(object):
@@ -74,8 +73,7 @@ class Tomography_1D(object):
         return
         
     def lossfn(self,CAx):
-        out=np.dot(self.Amatrix,CAx)
-        return np.sum(np.abs(out-self.b)) + 16000 * np.std(CAx)
+        return np.sum(np.abs(np.dot(self.Amatrix,CAx)-self.b)) + 16000 * np.std(CAx)
 #        return np.sum(np.abs(out-self.b)) + 80*np.sum(np.abs(np.diff(CAx)))
         
         
