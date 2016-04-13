@@ -73,9 +73,8 @@ class Tomography_1D(object):
         return
         
     def lossfn(self,CAx):
-        return np.sum(np.abs(np.dot(self.Amatrix,CAx)-self.b)) + 16000 * np.std(CAx)
-#        return np.sum(np.abs(out-self.b)) + 80*np.sum(np.abs(np.diff(CAx)))
-        
+        return(np.sum(np.abs(np.dot(self.Amatrix,CAx)-self.b)) + 16000 * np.std(CAx))
+  
         
     def calibrate(self):
 

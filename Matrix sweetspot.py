@@ -61,11 +61,10 @@ calSig3=t1d2.calcSignal(calSmp3)
 
 
 calSig3=t1d2.calcSignal(calSmp3)
-calSize=len(calSig3)
+calSize+=100
 #%%Train t1d
 np.random.seed(2)
 noisesize=0.05*max(calSig2)
-calSize+=100
 
 storednoise=noisesize-noisesize*2*np.random.rand(calSize)
 t1d1.addTrainingData(np.append(np.zeros(50),calSmp1),calSig1+storednoise)
@@ -128,18 +127,6 @@ rounsample=np.array([0,0,0,0,0.5,0.6,0.8,1,1.5,2,3,4,5,7,9,12,15,18,19,20,21,21.
 rounsmp=np.zeros(60*3)
 fill=0
 rounsmp=np.zeros(smpSize)
-for i in range(60):
-    rounsmp[fill:fill+2]=rounsample[i]
-    rounsmp[fill+200:fill+202]=rounsample[i]
-    fill+=2
-smp=calSmp2
-
-testsig = t1d1.calcSignal(smp)
-
-noisesize=0.1*max(testsig)
-testsig+=noisesize-noisesize*2*np.random.rand(len(testsig))
-
-rec = t1d1.reconstruct(testsig)
 
 for i in xrange(60):
     rounsmp[fill:fill+4]=rounsample[i]
@@ -150,8 +137,8 @@ smp=np.linspace(0,2,300)
 smp=gaussian_filter(calSmp3,2)
 
 smp=calSmp1
-testsig = t1d2.calcSignal(smp)
 
+testsig = t1d2.calcSignal(smp)
 noisesize=0.1*max(testsig)
 
 storednoise=noisesize-noisesize*2*np.random.rand(600)
