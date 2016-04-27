@@ -38,13 +38,13 @@ def makeSweetSpot(std):
     #sweetSpot=np.repeat(np.repeat(sweetSpot,2,axis=0),2,axis=1)
     #sweetSpot=np.ones((6,6))
 
-t2ds=tm.Tomographer_2d(makeSweetSpot(0.9))
-t2dm=tm.Tomographer_2d(makeSweetSpot(0.4))
+t2ds=tm.Tomographer_2d(makeSweetSpot(0.2))#0.9))
+t2dm=tm.Tomographer_2d(makeSweetSpot(0.2))#0.4))
 t2dl=tm.Tomographer_2d(makeSweetSpot(0.2))
 
 
 np.random.seed(2)
-diagholes4= np.array([[0,0,0,0,1,1,1,1,1,1,1,1],[0,0,0,0,1,1,1,1,1,1,1,1],[0,0,0,0,1,1,1,1,1,1,1,1],[0,0,0,0,1,1,1,1,1,1,1,1],
+diagholes4= np.array([[0,0,0,0,2,2,2,2,2,2,2,2],[0,0,0,0,2,2,2,2,2,2,2,2],[0,0,0,0,2,2,2,2,2,2,2,2],[0,0,0,0,2,2,2,2,2,2,2,2],
                 [1,1,1,1,0,0,0,0,1,1,1,1],[1,1,1,1,0,0,0,0,1,1,1,1],[1,1,1,1,0,0,0,0,1,1,1,1],[1,1,1,1,0,0,0,0,1,1,1,1],
                 [1,1,1,1,1,1,1,1,0,0,0,0],[1,1,1,1,1,1,1,1,0,0,0,0],[1,1,1,1,1,1,1,1,0,0,0,0],[1,1,1,1,1,1,1,1,0,0,0,0]])
 diagholes12=np.repeat(np.repeat(diagholes4,3,axis=0),3,axis=1)
@@ -58,17 +58,21 @@ ring12/=255.0
 square12=ring12
 
 #%%Training
-trainingnoise=0.01
+trainingnoise=0.001
 t2ds.addTrainingData(square12,addNoise2D(t2ds.calcSignal(square12),trainingnoise))
 t2dm.addTrainingData(square12,addNoise2D(t2dm.calcSignal(square12),trainingnoise))
 t2dl.addTrainingData(square12,addNoise2D(t2dl.calcSignal(square12),trainingnoise))
+
+t2ds.lam=0
+t2dm.lam=5
+t2dl.lam=10
 
 t2ds.calibrate()
 t2dm.calibrate()
 t2dl.calibrate()
 
 #%%Reconstruct
-noise=0.01
+noise=0.001
 ssdh4 = addNoise2D(t2ds.calcSignal(diagholes4),noise)
 ssdh12= addNoise2D(t2ds.calcSignal(diagholes12),noise)
 ssrng12= addNoise2D(t2ds.calcSignal(ring12),noise)

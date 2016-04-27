@@ -19,7 +19,7 @@ class Tomographer_2d(object):
         self.Amatrix=np.zeros([0,self.Nx*self.Ny])
         self.b=np.zeros(0)
         self.CA=np.zeros_like(sweetSpot)
-        self.lam=6000
+        self.lam=0
     
     def calcSignal(self, smp):
         Ox= smp.shape[1]
@@ -85,7 +85,9 @@ class Tomographer_2d(object):
 
 
     def calibrate(self):
-        self.CA0,_,_,_= np.linalg.lstsq(self.Amatrix,self.b)
+        
+        self.Amatrix+=(self.lam**2) *np.eye(N=self.Amatrix.shape[0],M=self.Amatrix.shape[1],k=0)
+        self.CA0,_,_,_= np.linalg.lstsq(self.Amatrix,self.b)       
 #        self.optres=minimize(self.lossfn,x0=0.3*np.ones(self.Nx*self.Ny))
 #        self.CA=self.optres.x.reshape((self.Ny,self.Nx))
         self.CA=self.CA0.reshape((self.Ny,self.Nx))
