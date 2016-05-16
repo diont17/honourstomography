@@ -34,6 +34,11 @@ def makeSweetSpot(std):
     
     sweetSpot=np.exp(- ((x**2 + y**2)/ 2*std**2))
     sweetSpot*=(1.0/np.max(sweetSpot))
+    
+    sweetSpot=np.float64([[0,0,1,0,0],[0,1,1,1,0],[1,1,1,1,1],[0,0,1,1,0],[0,0,0,1,0]])
+    sweetSpot=np.repeat(np.repeat(sweetSpot,4,axis=0),4,axis=1)
+    sweetSpot=img.gaussian_filter(sweetSpot,1.37,mode='constant')
+    
     return sweetSpot
     #sweetSpot=np.repeat(np.repeat(sweetSpot,2,axis=0),2,axis=1)
     #sweetSpot=np.ones((6,6))
@@ -58,21 +63,21 @@ ring12/=255.0
 square12=ring12
 
 #%%Training
-trainingnoise=0.001
+trainingnoise=0.000
 t2ds.addTrainingData(square12,addNoise2D(t2ds.calcSignal(square12),trainingnoise))
 t2dm.addTrainingData(square12,addNoise2D(t2dm.calcSignal(square12),trainingnoise))
 t2dl.addTrainingData(square12,addNoise2D(t2dl.calcSignal(square12),trainingnoise))
 
-t2ds.lam=0
-t2dm.lam=5
-t2dl.lam=10
+t2ds.lam=8
+t2dm.lam=10
+t2dl.lam=12
 
 t2ds.calibrate()
 t2dm.calibrate()
 t2dl.calibrate()
 
 #%%Reconstruct
-noise=0.001
+noise=0.05
 ssdh4 = addNoise2D(t2ds.calcSignal(diagholes4),noise)
 ssdh12= addNoise2D(t2ds.calcSignal(diagholes12),noise)
 ssrng12= addNoise2D(t2ds.calcSignal(ring12),noise)

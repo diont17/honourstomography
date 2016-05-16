@@ -45,7 +45,7 @@ class Tomographer_2d(object):
                 padn=n+lbx
                 segment=padsmp[padm-lby:padm+lby, padn-lbx:padn+lbx]
                 sig[m,n]=np.sum(segment*self.sweetSpot)
-
+#            sig[m, -11:-1]=sig[m,-12]
         return sig
     
     def addTrainingData(self, smp, sig):
